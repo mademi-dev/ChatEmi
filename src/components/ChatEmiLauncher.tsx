@@ -44,7 +44,7 @@ export function ChatEmiLauncher({
   const { actions, conversations, connectionStatus, notifications, theme, unreadNotificationCount } = useChatEmi();
   const [open, setOpen] = useState(defaultOpen);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const dragState = useRef<DragState>();
+  const dragState = useRef<DragState | undefined>(undefined);
 
   const conversationUnreadCount = useMemo(
     () => conversations.reduce((total, conversation) => total + (conversation.unreadCount ?? 0), 0),
