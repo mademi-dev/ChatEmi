@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/chatemi.umd.cjs",
   "module": "dist/chatemi.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/chatemi.js",
       "require": "./dist/chatemi.umd.cjs"
     },
