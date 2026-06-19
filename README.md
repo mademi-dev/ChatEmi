@@ -19,6 +19,12 @@ ChatEmi is a publish-ready React messaging package for building in-app messenger
 npm install chatemi
 ```
 
+## Documentation and examples
+
+- Full implementation guide: [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md)
+- Backend REST/WebSocket contract: [`docs/BACKEND_CONTRACT.md`](docs/BACKEND_CONTRACT.md)
+- Next.js launcher example: [`examples/nextjs-chat-widget`](examples/nextjs-chat-widget)
+
 ```tsx
 import { ChatEmiLauncher, ChatEmiMessenger, ChatEmiProvider, useChatEmi } from "chatemi";
 import "chatemi/styles.css";
