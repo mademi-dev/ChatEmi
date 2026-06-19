@@ -1,0 +1,64 @@
+{
+  "name": "chatemi",
+  "version": "0.1.0",
+  "description": "A React messaging kit with API clients, realtime socket support, hooks, provider state, and default Telegram-style UI.",
+  "type": "module",
+  "main": "dist/chatemi.umd.cjs",
+  "module": "dist/chatemi.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/chatemi.js",
+      "require": "./dist/chatemi.umd.cjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mademi-dev/ChatEmi.git"
+  },
+  "keywords": [
+    "react",
+    "chat",
+    "messaging",
+    "messenger",
+    "websocket",
+    "socket",
+    "telegram",
+    "ui"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mademi-dev/ChatEmi/issues"
+  },
+  "homepage": "https://github.com/mademi-dev/ChatEmi#readme",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vite-plugin-dts": "^5.0.2"
+  }
+}
