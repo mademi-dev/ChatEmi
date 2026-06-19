@@ -9,16 +9,24 @@ import type {
   ChatEmiConversation,
   ChatEmiCreateConversationInput,
   ChatEmiEditMessageInput,
+  ChatEmiForwardMessageInput,
   ChatEmiID,
   ChatEmiListOptions,
+  ChatEmiManageMemberInput,
+  ChatEmiMember,
   ChatEmiMessage,
   ChatEmiMessageListOptions,
   ChatEmiPresenceStatus,
   ChatEmiProviderProps,
+  ChatEmiReceiptEvent,
   ChatEmiSendMessageInput,
   ChatEmiState,
   ChatEmiTypingEvent,
-  ChatEmiUploadAttachmentInput
+  ChatEmiUpdateAvatarInput,
+  ChatEmiUpdateMemberInput,
+  ChatEmiUploadAttachmentInput,
+  ChatEmiUser,
+  ChatEmiUserSearchOptions
 } from "./types";
 
 type ChatEmiAction =
@@ -29,11 +37,14 @@ type ChatEmiAction =
   | { type: "set-conversations"; conversations: ChatEmiConversation[] }
   | { type: "upsert-conversation"; conversation: ChatEmiConversation }
   | { type: "remove-conversation"; conversationId: ChatEmiID }
+  | { type: "upsert-member"; conversationId: ChatEmiID; member: ChatEmiMember }
+  | { type: "remove-member"; conversationId: ChatEmiID; userId: ChatEmiID }
   | { type: "set-active-conversation"; conversationId?: ChatEmiID }
   | { type: "set-messages"; conversationId: ChatEmiID; messages: ChatEmiMessage[] }
   | { type: "upsert-message"; message: ChatEmiMessage }
   | { type: "remove-message"; conversationId: ChatEmiID; messageId: ChatEmiID }
   | { type: "set-message-reactions"; conversationId: ChatEmiID; messageId: ChatEmiID; reactions: ChatEmiMessage["reactions"] }
+  | { type: "apply-receipt"; receipt: ChatEmiReceiptEvent }
   | { type: "set-typing"; event: ChatEmiTypingEvent }
   | { type: "set-presence"; userId: ChatEmiID; status: ChatEmiPresenceStatus; lastSeenAt?: string };
 
@@ -45,9 +56,16 @@ export interface ChatEmiActions {
   editMessage: (input: ChatEmiEditMessageInput) => Promise<ChatEmiMessage>;
   deleteMessage: (conversationId: ChatEmiID, messageId: ChatEmiID) => Promise<void>;
   markRead: (conversationId: ChatEmiID, messageIds?: ChatEmiID[]) => Promise<void>;
+  markDelivered: (conversationId: ChatEmiID, messageIds?: ChatEmiID[]) => Promise<void>;
+  forwardMessage: (input: ChatEmiForwardMessageInput) => Promise<ChatEmiMessage>;
   addReaction: (conversationId: ChatEmiID, messageId: ChatEmiID, emoji: string) => Promise<ChatEmiMessage>;
   removeReaction: (conversationId: ChatEmiID, messageId: ChatEmiID, emoji: string) => Promise<ChatEmiMessage>;
   uploadAttachment: (input: ChatEmiUploadAttachmentInput) => Promise<ChatEmiAttachment>;
+  updateAvatar: (input: ChatEmiUpdateAvatarInput) => Promise<ChatEmiConversation | ChatEmiUser>;
+  addMembers: (conversationId: ChatEmiID, userIds: ChatEmiID[]) => Promise<ChatEmiMember[]>;
+  updateMember: (input: ChatEmiUpdateMemberInput) => Promise<ChatEmiMember>;
+  removeMember: (input: ChatEmiManageMemberInput) => Promise<void>;
+  searchUsers: (options: ChatEmiUserSearchOptions) => Promise<ChatEmiUser[]>;
   searchMessages: (query: string, options?: ChatEmiListOptions) => Promise<ChatEmiMessage[]>;
   startTyping: (conversationId: ChatEmiID) => void;
   stopTyping: (conversationId: ChatEmiID) => void;
@@ -79,6 +97,7 @@ function createInitialState(
     typingByConversation: {},
     presenceByUser: {},
     connectionStatus: "idle",
+    theme: config.theme ?? "light",
     loading: false
   };
 }
@@ -109,6 +128,32 @@ function reducer(state: ChatEmiState, action: ChatEmiAction): ChatEmiState {
         ...state,
         conversations: state.conversations.filter((conversation) => conversation.id !== action.conversationId),
         activeConversationId: state.activeConversationId === action.conversationId ? undefined : state.activeConversationId
+      };
+    case "upsert-member":
+      return {
+        ...state,
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.conversationId
+            ? {
+                ...conversation,
+                members: upsertByUserId(conversation.members ?? [], action.member),
+                participants: upsertById(conversation.participants, action.member.user)
+              }
+            : conversation
+        )
+      };
+    case "remove-member":
+      return {
+        ...state,
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.conversationId
+            ? {
+                ...conversation,
+                members: (conversation.members ?? []).filter((member) => member.user.id !== action.userId),
+                participants: conversation.participants.filter((participant) => participant.id !== action.userId)
+              }
+            : conversation
+        )
       };
     case "set-active-conversation":
       return { ...state, activeConversationId: action.conversationId };
@@ -150,6 +195,16 @@ function reducer(state: ChatEmiState, action: ChatEmiAction): ChatEmiState {
           ...state.messagesByConversation,
           [action.conversationId]: (state.messagesByConversation[action.conversationId] ?? []).map((message) =>
             message.id === action.messageId ? { ...message, reactions: action.reactions } : message
+          )
+        }
+      };
+    case "apply-receipt":
+      return {
+        ...state,
+        messagesByConversation: {
+          ...state.messagesByConversation,
+          [action.receipt.conversationId]: (state.messagesByConversation[action.receipt.conversationId] ?? []).map((message) =>
+            action.receipt.messageIds.includes(message.id) ? applyReceiptToMessage(message, action.receipt) : message
           )
         }
       };
@@ -247,9 +302,13 @@ export function ChatEmiProvider({
       socket.on("conversation.created", (conversation) => dispatch({ type: "upsert-conversation", conversation })),
       socket.on("conversation.updated", (conversation) => dispatch({ type: "upsert-conversation", conversation })),
       socket.on("conversation.deleted", ({ conversationId }) => dispatch({ type: "remove-conversation", conversationId })),
+      socket.on("conversation.member.added", ({ conversationId, member }) => dispatch({ type: "upsert-member", conversationId, member })),
+      socket.on("conversation.member.updated", ({ conversationId, member }) => dispatch({ type: "upsert-member", conversationId, member })),
+      socket.on("conversation.member.removed", ({ conversationId, userId }) => dispatch({ type: "remove-member", conversationId, userId })),
       socket.on("message.created", (message) => dispatch({ type: "upsert-message", message })),
       socket.on("message.updated", (message) => dispatch({ type: "upsert-message", message })),
       socket.on("message.deleted", ({ conversationId, messageId }) => dispatch({ type: "remove-message", conversationId, messageId })),
+      socket.on("message.receipt", (receipt) => dispatch({ type: "apply-receipt", receipt })),
       socket.on("message.reaction", ({ conversationId, messageId, reactions }) =>
         dispatch({ type: "set-message-reactions", conversationId, messageId, reactions })
       ),
@@ -290,9 +349,13 @@ export function ChatEmiProvider({
 
       const page = await api.listMessages(conversationId, options);
       dispatch({ type: "set-messages", conversationId, messages: page.items });
+      void api.markConversationDelivered(
+        conversationId,
+        page.items.filter((message) => message.sender.id !== state.currentUser?.id).map((message) => message.id)
+      );
       return page.items;
     },
-    [api, socket]
+    [api, socket, state.currentUser?.id]
   );
 
   const createConversation = useCallback(
@@ -316,6 +379,8 @@ export function ChatEmiProvider({
             text: input.text,
             html: input.html,
             attachments: input.attachments,
+            kind: input.kind,
+            replyToId: input.replyToId,
             status: "sending",
             createdAt: new Date().toISOString(),
             metadata: input.metadata
@@ -368,6 +433,24 @@ export function ChatEmiProvider({
     [api, socket]
   );
 
+  const markDelivered = useCallback(
+    async (conversationId: ChatEmiID, messageIds?: ChatEmiID[]) => {
+      await api.markConversationDelivered(conversationId, messageIds);
+      socket.sendDeliveredReceipt(conversationId, messageIds ?? []);
+    },
+    [api, socket]
+  );
+
+  const forwardMessage = useCallback(
+    async (input: ChatEmiForwardMessageInput) => {
+      const message = await api.forwardMessage(input);
+      socket.sendForward(input);
+      dispatch({ type: "upsert-message", message });
+      return message;
+    },
+    [api, socket]
+  );
+
   const addReaction = useCallback(
     async (conversationId: ChatEmiID, messageId: ChatEmiID, emoji: string) => {
       const message = await api.addReaction(conversationId, messageId, emoji);
@@ -387,6 +470,57 @@ export function ChatEmiProvider({
   );
 
   const uploadAttachment = useCallback((input: ChatEmiUploadAttachmentInput) => api.uploadAttachment(input), [api]);
+
+  const updateAvatar = useCallback(
+    async (input: ChatEmiUpdateAvatarInput) => {
+      const updated = await api.updateConversationAvatar(input);
+
+      if ("participants" in updated) {
+        dispatch({ type: "upsert-conversation", conversation: updated });
+        socket.sendAvatarUpdate(updated.id);
+      } else {
+        dispatch({ type: "set-current-user", user: state.currentUser?.id === updated.id ? updated : state.currentUser });
+      }
+
+      return updated;
+    },
+    [api, socket, state.currentUser]
+  );
+
+  const addMembers = useCallback(
+    async (conversationId: ChatEmiID, userIds: ChatEmiID[]) => {
+      const members = await api.addMembers(conversationId, userIds);
+      members.forEach((member) => dispatch({ type: "upsert-member", conversationId, member }));
+      return members;
+    },
+    [api]
+  );
+
+  const updateMember = useCallback(
+    async (input: ChatEmiUpdateMemberInput) => {
+      const member = await api.updateMember(input);
+      dispatch({ type: "upsert-member", conversationId: input.conversationId, member });
+      socket.sendMemberUpdate(input);
+      return member;
+    },
+    [api, socket]
+  );
+
+  const removeMember = useCallback(
+    async (input: ChatEmiManageMemberInput) => {
+      await api.removeMember(input);
+      dispatch({ type: "remove-member", conversationId: input.conversationId, userId: input.userId });
+    },
+    [api]
+  );
+
+  const searchUsers = useCallback(
+    async (options: ChatEmiUserSearchOptions) => {
+      const page = await api.searchUsers(options);
+      return page.items;
+    },
+    [api]
+  );
 
   const searchMessages = useCallback(
     async (query: string, options: ChatEmiListOptions = {}) => {
@@ -415,9 +549,16 @@ export function ChatEmiProvider({
       editMessage,
       deleteMessage,
       markRead,
+      markDelivered,
+      forwardMessage,
       addReaction,
       removeReaction,
       uploadAttachment,
+      updateAvatar,
+      addMembers,
+      updateMember,
+      removeMember,
+      searchUsers,
       searchMessages,
       startTyping,
       stopTyping,
@@ -433,9 +574,16 @@ export function ChatEmiProvider({
       editMessage,
       deleteMessage,
       markRead,
+      markDelivered,
+      forwardMessage,
       addReaction,
       removeReaction,
       uploadAttachment,
+      updateAvatar,
+      addMembers,
+      updateMember,
+      removeMember,
+      searchUsers,
       searchMessages,
       startTyping,
       stopTyping,
@@ -481,6 +629,37 @@ function upsertById<TItem extends { id: ChatEmiID }>(items: TItem[], item: TItem
   }
 
   return [...items.slice(0, index), item, ...items.slice(index + 1)];
+}
+
+function upsertByUserId(items: ChatEmiMember[], item: ChatEmiMember): ChatEmiMember[] {
+  const index = items.findIndex((currentItem) => currentItem.user.id === item.user.id);
+
+  if (index === -1) {
+    return [...items, item];
+  }
+
+  return [...items.slice(0, index), item, ...items.slice(index + 1)];
+}
+
+function applyReceiptToMessage(message: ChatEmiMessage, receipt: ChatEmiReceiptEvent): ChatEmiMessage {
+  const receiptKey = receipt.status === "read" ? "readBy" : "deliveredTo";
+  const nextReceipts = upsertReceipt(message[receiptKey] ?? [], receipt);
+
+  return {
+    ...message,
+    [receiptKey]: nextReceipts,
+    status: receipt.status === "read" ? "read" : message.status === "read" ? "read" : "delivered"
+  };
+}
+
+function upsertReceipt(receipts: ChatEmiReceiptEvent[], receipt: ChatEmiReceiptEvent): ChatEmiReceiptEvent[] {
+  const index = receipts.findIndex((currentReceipt) => currentReceipt.userId === receipt.userId && currentReceipt.status === receipt.status);
+
+  if (index === -1) {
+    return [...receipts, receipt];
+  }
+
+  return [...receipts.slice(0, index), receipt, ...receipts.slice(index + 1)];
 }
 
 function sortConversations(conversations: ChatEmiConversation[]): ChatEmiConversation[] {

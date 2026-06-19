@@ -1,11 +1,13 @@
 import type {
   ChatEmiConfig,
+  ChatEmiForwardMessageInput,
   ChatEmiID,
   ChatEmiPresenceStatus,
   ChatEmiSocketEnvelope,
   ChatEmiSocketEventMap,
   ChatEmiSocketEventName,
-  ChatEmiSocketHandler
+  ChatEmiSocketHandler,
+  ChatEmiUpdateMemberInput
 } from "./types";
 
 type AnyHandler = (payload: unknown) => void;
@@ -87,6 +89,22 @@ export class ChatEmiSocket {
 
   sendReadReceipt(conversationId: ChatEmiID, messageIds: ChatEmiID[]): void {
     this.send("message.read", { conversationId, messageIds });
+  }
+
+  sendDeliveredReceipt(conversationId: ChatEmiID, messageIds: ChatEmiID[]): void {
+    this.send("message.delivered", { conversationId, messageIds });
+  }
+
+  sendForward(input: ChatEmiForwardMessageInput): void {
+    this.send("message.forward", input);
+  }
+
+  sendMemberUpdate(input: ChatEmiUpdateMemberInput): void {
+    this.send("conversation.member.update", input);
+  }
+
+  sendAvatarUpdate(conversationId: ChatEmiID): void {
+    this.send("conversation.avatar.update", { conversationId });
   }
 
   sendPresence(status: ChatEmiPresenceStatus): void {

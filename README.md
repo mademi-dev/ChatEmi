@@ -4,9 +4,13 @@ ChatEmi is a publish-ready React messaging package for building in-app messenger
 
 - A typed REST API client for conversations, messages, attachments, reactions, read receipts, and search.
 - A typed WebSocket client with reconnects, outbound queuing, typing, presence, receipts, and realtime conversation/message events.
+- Group, channel, direct, and bot conversation models with owner/admin/member roles.
+- Delivered/read receipts, last-seen presence, replies, forwards, avatars, voice messages, images, videos, and files.
+- Optional external user-directory API integration.
+- Optional server-side MongoDB connection helpers for API backends.
 - `ChatEmiProvider` for application layout/state.
 - `useChatEmi` for product code that needs chat actions and state.
-- `ChatEmiMessenger`, a default responsive Telegram-style UI that can be used immediately or customized.
+- `ChatEmiMessenger`, a default responsive light/dark Telegram-style UI that can be used immediately or customized.
 
 ## Install
 
@@ -24,10 +28,18 @@ export function App() {
       config={{
         apiBaseUrl: "https://api.example.com/chat",
         socketUrl: "wss://api.example.com/chat/socket",
-        token: () => localStorage.getItem("access_token") ?? undefined
+        token: () => localStorage.getItem("access_token") ?? undefined,
+        theme: "system",
+        userDirectory: {
+          baseUrl: "https://identity.example.com",
+          searchPath: "/users/search",
+          headers: () => ({
+            Authorization: `Bearer ${localStorage.getItem("identity_token")}`
+          })
+        }
       }}
     >
-      <ChatEmiMessenger />
+      <ChatEmiMessenger theme="system" />
     </ChatEmiProvider>
   );
 }
@@ -46,7 +58,8 @@ export function SendWelcomeButton({ conversationId }: { conversationId: string }
       onClick={() =>
         actions.sendMessage({
           conversationId,
-          text: "Welcome to the chat"
+          text: "Welcome to the chat",
+          replyToId: activeMessages.at(-1)?.id
         })
       }
     >
@@ -63,11 +76,16 @@ By default ChatEmi calls these paths under `apiBaseUrl`:
 | Feature | Method/path |
 | --- | --- |
 | Current user | `GET /me` |
+| Users | `GET /users?q=...`, `GET /users/:userId` |
 | Conversations | `GET /conversations`, `POST /conversations` |
 | Conversation detail | `GET /conversations/:conversationId`, `PATCH /conversations/:conversationId`, `DELETE /conversations/:conversationId` |
+| Avatar | `PATCH /conversations/:conversationId/avatar`, `PATCH /users/:userId` |
+| Members/admins | `POST /conversations/:conversationId/members`, `PATCH /conversations/:conversationId/members/:userId`, `DELETE /conversations/:conversationId/members/:userId` |
 | Messages | `GET /conversations/:conversationId/messages`, `POST /conversations/:conversationId/messages` |
 | Message detail | `PATCH /conversations/:conversationId/messages/:messageId`, `DELETE /conversations/:conversationId/messages/:messageId` |
 | Read receipts | `POST /conversations/:conversationId/read` |
+| Delivered receipts | `POST /conversations/:conversationId/delivered` |
+| Forward | `POST /conversations/:conversationId/messages/:messageId/forward` |
 | Reactions | `POST /conversations/:conversationId/messages/:messageId/reactions`, `DELETE /conversations/:conversationId/messages/:messageId/reactions` |
 | Attachment upload | `POST /attachments` multipart form data |
 | Search | `GET /search/messages?q=...` |
@@ -90,6 +108,9 @@ Built-in incoming event names include:
 - `conversation.created`
 - `conversation.updated`
 - `conversation.deleted`
+- `conversation.member.added`
+- `conversation.member.updated`
+- `conversation.member.removed`
 - `message.created`
 - `message.updated`
 - `message.deleted`
@@ -105,7 +126,168 @@ Built-in outgoing helper events include:
 - `conversation.unsubscribe`
 - `typing`
 - `message.read`
+- `message.delivered`
+- `message.forward`
+- `conversation.member.update`
+- `conversation.avatar.update`
 - `presence`
+
+## Groups, channels, admins, and members
+
+Create groups and channels by calling the typed API or hook action:
+
+```tsx
+const { actions } = useChatEmi();
+
+await actions.createConversation({
+  type: "group",
+  title: "Product Team",
+  participantIds: ["user_1", "user_2"],
+  avatarUrl: "https://cdn.example.com/product.png"
+});
+
+await actions.createConversation({
+  type: "channel",
+  title: "Announcements",
+  participantIds: ["owner_1"],
+  readOnly: true,
+  publicUsername: "company_announcements"
+});
+```
+
+Conversation members can include roles and permissions:
+
+```ts
+{
+  user: { id: "user_1", name: "Ava" },
+  role: "admin",
+  permissions: ["manage_members", "pin_messages", "send_media"],
+  joinedAt: "2026-06-19T00:00:00.000Z"
+}
+```
+
+The default UI shows a member-management panel to owners/admins/moderators when `enableAdminControls` is enabled.
+
+## Messages, receipts, replies, forwards, and media
+
+Messages support:
+
+- text and HTML bodies
+- `replyToId`/`replyTo`
+- `forwardedFrom`, `forwardedFromConversationId`, and `forwardedFromMessageId`
+- `deliveredTo` and `readBy` receipts
+- images, videos, audio, voice messages, generic files, locations, and contacts
+
+```tsx
+await actions.sendMessage({
+  conversationId: "chat_1",
+  text: "Here is the design",
+  replyToId: "message_1",
+  attachments: [
+    {
+      id: "attachment_1",
+      type: "image",
+      url: "https://cdn.example.com/design.png",
+      name: "design.png"
+    }
+  ]
+});
+
+await actions.forwardMessage({
+  sourceConversationId: "chat_1",
+  targetConversationId: "chat_2",
+  messageId: "message_1"
+});
+```
+
+## Last seen and presence
+
+Users can include `presence` and `lastSeenAt`. The default UI renders direct chats as `online`, `last seen 4m ago`, or `last seen recently`.
+
+```ts
+{
+  id: "user_1",
+  name: "Ava",
+  presence: "offline",
+  lastSeenAt: "2026-06-19T14:00:00.000Z"
+}
+```
+
+## External user API
+
+Use `config.userDirectory` when users live outside your chat backend. ChatEmi will call that API for user search and user details without leaking the chat API bearer token unless you add it yourself in `userDirectory.headers`.
+
+```tsx
+<ChatEmiProvider
+  config={{
+    apiBaseUrl: "https://api.example.com/chat",
+    userDirectory: {
+      baseUrl: "https://identity.example.com",
+      searchPath: "/directory/users",
+      userPath: (userId) => `/directory/users/${userId}`,
+      headers: async () => ({
+        Authorization: `Bearer ${await getIdentityToken()}`
+      }),
+      mapUser: (raw) => {
+        const user = raw as { id: string; displayName: string; photo?: string };
+        return {
+          id: user.id,
+          name: user.displayName,
+          avatarUrl: user.photo
+        };
+      }
+    }
+  }}
+>
+  <ChatEmiMessenger />
+</ChatEmiProvider>
+```
+
+## MongoDB backend integration
+
+MongoDB must be connected from your API server, not from browser React code. Install the optional peer dependency in your backend:
+
+```bash
+npm install chatemi mongodb
+```
+
+```ts
+import { createChatEmiMongoConnection } from "chatemi/server";
+
+const chatDb = await createChatEmiMongoConnection({
+  uri: process.env.MONGODB_URI!,
+  databaseName: "chatemi",
+  // Pass MongoClient options that match your deployment. ChatEmi intentionally
+  // does not guess pool sizes because serverless and long-running servers need
+  // different connection strategies.
+  clientOptions: {
+    appName: "chatemi-api"
+  }
+});
+
+await chatDb.ensureIndexes();
+
+export const conversations = chatDb.collections.conversations;
+export const messages = chatDb.collections.messages;
+export const members = chatDb.collections.members;
+export const receipts = chatDb.collections.receipts;
+export const attachments = chatDb.collections.attachments;
+```
+
+Connection guidance:
+
+- Create one MongoDB client per server process and reuse it.
+- Do not put MongoDB credentials in React/browser code.
+- For serverless functions, initialize the connection outside the handler so warm invocations reuse it.
+- For long-running servers, pass pool/timeouts through `clientOptions` based on observed concurrency and MongoDB connection metrics.
+
+## Light mode and dark mode
+
+Use `theme="light"`, `theme="dark"`, or `theme="system"`:
+
+```tsx
+<ChatEmiMessenger theme="dark" />
+```
 
 ## Customizing the UI
 
