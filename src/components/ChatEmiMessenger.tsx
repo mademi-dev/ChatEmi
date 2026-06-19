@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, ReactElement, useMemo, useRef, useState } from "react";
 import { useChatEmi } from "../context";
 import type { ChatEmiAttachment, ChatEmiConversation, ChatEmiMessage, ChatEmiMessengerProps } from "../types";
 
@@ -9,7 +9,7 @@ export function ChatEmiMessenger({
   showSidebar = true,
   renderConversation,
   renderMessage
-}: ChatEmiMessengerProps): JSX.Element {
+}: ChatEmiMessengerProps): ReactElement {
   const {
     actions,
     activeConversation,
@@ -25,7 +25,7 @@ export function ChatEmiMessenger({
   const [search, setSearch] = useState("");
   const [attachments, setAttachments] = useState<ChatEmiAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
-  const typingTimer = useRef<ReturnType<typeof setTimeout>>();
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const filteredConversations = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -189,7 +189,7 @@ export function ChatEmiMessenger({
   );
 }
 
-function DefaultConversation({ conversation, currentUserId }: { conversation: ChatEmiConversation; currentUserId?: string }): JSX.Element {
+function DefaultConversation({ conversation, currentUserId }: { conversation: ChatEmiConversation; currentUserId?: string }): ReactElement {
   return (
     <>
       <Avatar conversation={conversation} currentUserId={currentUserId} />
@@ -202,7 +202,7 @@ function DefaultConversation({ conversation, currentUserId }: { conversation: Ch
   );
 }
 
-function DefaultMessage({ message, isMine }: { message: ChatEmiMessage; isMine: boolean }): JSX.Element {
+function DefaultMessage({ message, isMine }: { message: ChatEmiMessage; isMine: boolean }): ReactElement {
   return (
     <article className={`chatemi__message ${isMine ? "chatemi__message--mine" : ""}`}>
       {!isMine ? <strong className="chatemi__message-sender">{message.sender.name}</strong> : null}
@@ -235,7 +235,7 @@ function DefaultMessage({ message, isMine }: { message: ChatEmiMessage; isMine: 
   );
 }
 
-function Avatar({ conversation, currentUserId }: { conversation: ChatEmiConversation; currentUserId?: string }): JSX.Element {
+function Avatar({ conversation, currentUserId }: { conversation: ChatEmiConversation; currentUserId?: string }): ReactElement {
   const title = conversationTitle(conversation, currentUserId);
   const participant = conversation.participants.find((user) => user.id !== currentUserId) ?? conversation.participants[0];
   const avatarUrl = conversation.avatarUrl ?? participant?.avatarUrl;

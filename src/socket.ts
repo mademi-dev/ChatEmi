@@ -124,7 +124,7 @@ export class ChatEmiSocket {
       const envelope = typeof data === "string" ? (JSON.parse(data) as ChatEmiSocketEnvelope) : (data as ChatEmiSocketEnvelope);
 
       if (envelope && typeof envelope.type === "string") {
-        this.dispatch(envelope.type as ChatEmiSocketEventName, envelope.payload);
+        this.dispatchRaw(envelope.type, envelope.payload);
       }
     } catch (error) {
       this.dispatch("error", error instanceof Error ? error : new Error("Unable to parse ChatEmi socket message"));
@@ -177,6 +177,10 @@ export class ChatEmiSocket {
 
   private dispatch<TName extends ChatEmiSocketEventName>(eventName: TName, payload: ChatEmiSocketEventMap[TName]): void {
     this.listeners.get(eventName)?.forEach((handler) => handler(payload));
+  }
+
+  private dispatchRaw(eventName: string, payload: unknown): void {
+    this.listeners.get(eventName as ChatEmiSocketEventName)?.forEach((handler) => handler(payload));
   }
 
   private clearReconnectTimer(): void {

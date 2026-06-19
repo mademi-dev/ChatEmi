@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from "react";
+import type { ReactElement } from "react";
 import { ChatEmiApi } from "./api";
 import { ChatEmiSocket } from "./socket";
 import type {
@@ -187,7 +188,7 @@ export function ChatEmiProvider({
   autoConnect = true,
   initialConversations,
   initialActiveConversationId
-}: ChatEmiProviderProps): JSX.Element {
+}: ChatEmiProviderProps): ReactElement {
   const api = useMemo(() => new ChatEmiApi(config), [config]);
   const socket = useMemo(() => new ChatEmiSocket(config), [config]);
   const [state, dispatch] = useReducer(

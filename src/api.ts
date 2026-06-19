@@ -65,7 +65,7 @@ export class ChatEmiApi {
 
   async listConversations(options: ChatEmiListOptions = {}, signal?: AbortSignal): Promise<ChatEmiPage<ChatEmiConversation>> {
     return this.request<ChatEmiPage<ChatEmiConversation>>(this.endpoint("conversations"), {
-      query: options,
+      query: { ...options },
       signal
     });
   }
@@ -100,7 +100,7 @@ export class ChatEmiApi {
     signal?: AbortSignal
   ): Promise<ChatEmiPage<ChatEmiMessage>> {
     return this.request<ChatEmiPage<ChatEmiMessage>>(this.endpoint("messages", conversationId), {
-      query: options,
+      query: { ...options },
       signal
     });
   }
@@ -171,14 +171,17 @@ export class ChatEmiApi {
   private endpoint(name: "conversation" | "messages" | "markRead", conversationId: ChatEmiID): string;
   private endpoint(name: "message" | "reactions", conversationId: ChatEmiID, messageId: ChatEmiID): string;
   private endpoint(name: keyof typeof defaultEndpoints, conversationId?: ChatEmiID, messageId?: ChatEmiID): string {
-    const endpoint = this.config.endpoints?.[name] ?? defaultEndpoints[name];
-
-    if (typeof endpoint === "function") {
-      if (messageId) return endpoint(conversationId ?? "", messageId);
-      return endpoint(conversationId ?? "");
+    switch (name) {
+      case "conversation":
+      case "messages":
+      case "markRead":
+        return (this.config.endpoints?.[name] ?? defaultEndpoints[name])(conversationId ?? "");
+      case "message":
+      case "reactions":
+        return (this.config.endpoints?.[name] ?? defaultEndpoints[name])(conversationId ?? "", messageId ?? "");
+      default:
+        return this.config.endpoints?.[name] ?? defaultEndpoints[name];
     }
-
-    return endpoint;
   }
 
   private async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
