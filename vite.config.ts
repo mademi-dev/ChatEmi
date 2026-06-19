@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     dts({
+      entryRoot: "src",
       insertTypesEntry: true,
       rollupTypes: true
     })
