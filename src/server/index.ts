@@ -4,4 +4,4 @@ export {
   type ChatEmiMongoCollections,
   type ChatEmiMongoConnection,
   type ChatEmiMongoConnectionOptions
-} from "./mongodb";
+} from "./mongodb.js";
