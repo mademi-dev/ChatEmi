@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ReactElement } from "react";
 import { ChatEmiApi } from "./api";
 import { ChatEmiSocket } from "./socket";
@@ -16,6 +16,7 @@ import type {
   ChatEmiMember,
   ChatEmiMessage,
   ChatEmiMessageListOptions,
+  ChatEmiNotification,
   ChatEmiPresenceStatus,
   ChatEmiProviderProps,
   ChatEmiReceiptEvent,
@@ -45,6 +46,10 @@ type ChatEmiAction =
   | { type: "remove-message"; conversationId: ChatEmiID; messageId: ChatEmiID }
   | { type: "set-message-reactions"; conversationId: ChatEmiID; messageId: ChatEmiID; reactions: ChatEmiMessage["reactions"] }
   | { type: "apply-receipt"; receipt: ChatEmiReceiptEvent }
+  | { type: "add-notification"; notification: ChatEmiNotification; maxStored?: number }
+  | { type: "dismiss-notification"; notificationId: ChatEmiID }
+  | { type: "mark-notifications-read"; notificationIds?: ChatEmiID[] }
+  | { type: "clear-notifications" }
   | { type: "set-typing"; event: ChatEmiTypingEvent }
   | { type: "set-presence"; userId: ChatEmiID; status: ChatEmiPresenceStatus; lastSeenAt?: string };
 
@@ -70,6 +75,10 @@ export interface ChatEmiActions {
   startTyping: (conversationId: ChatEmiID) => void;
   stopTyping: (conversationId: ChatEmiID) => void;
   setPresence: (status: ChatEmiPresenceStatus) => void;
+  dismissNotification: (notificationId: ChatEmiID) => void;
+  markNotificationsRead: (notificationIds?: ChatEmiID[]) => void;
+  clearNotifications: () => void;
+  requestNotificationPermission: () => Promise<NotificationPermission | "unsupported">;
   connect: () => Promise<void>;
   disconnect: () => void;
 }
@@ -87,7 +96,8 @@ const ChatEmiContext = createContext<ChatEmiContextValue | undefined>(undefined)
 function createInitialState(
   config: ChatEmiConfig,
   initialConversations: ChatEmiConversation[] = [],
-  activeConversationId?: ChatEmiID
+  activeConversationId?: ChatEmiID,
+  initialNotifications: ChatEmiNotification[] = []
 ): ChatEmiState {
   return {
     currentUser: config.currentUser,
@@ -96,6 +106,8 @@ function createInitialState(
     messagesByConversation: {},
     typingByConversation: {},
     presenceByUser: {},
+    notifications: initialNotifications,
+    unreadNotificationCount: initialNotifications.filter((notification) => !notification.read).length,
     connectionStatus: "idle",
     theme: config.theme ?? "light",
     loading: false
@@ -208,6 +220,46 @@ function reducer(state: ChatEmiState, action: ChatEmiAction): ChatEmiState {
           )
         }
       };
+    case "add-notification": {
+      const existing = state.notifications.some((notification) => notification.id === action.notification.id);
+      const notifications = existing
+        ? state.notifications.map((notification) => (notification.id === action.notification.id ? action.notification : notification))
+        : [action.notification, ...state.notifications];
+      const cappedNotifications = notifications.slice(0, action.maxStored ?? 50);
+
+      return {
+        ...state,
+        notifications: cappedNotifications,
+        unreadNotificationCount: cappedNotifications.filter((notification) => !notification.read).length
+      };
+    }
+    case "dismiss-notification": {
+      const notifications = state.notifications.filter((notification) => notification.id !== action.notificationId);
+
+      return {
+        ...state,
+        notifications,
+        unreadNotificationCount: notifications.filter((notification) => !notification.read).length
+      };
+    }
+    case "mark-notifications-read": {
+      const notificationIds = action.notificationIds ? new Set(action.notificationIds) : undefined;
+      const notifications = state.notifications.map((notification) =>
+        !notificationIds || notificationIds.has(notification.id) ? { ...notification, read: true } : notification
+      );
+
+      return {
+        ...state,
+        notifications,
+        unreadNotificationCount: notifications.filter((notification) => !notification.read).length
+      };
+    }
+    case "clear-notifications":
+      return {
+        ...state,
+        notifications: [],
+        unreadNotificationCount: 0
+      };
     case "set-typing": {
       const currentEvents = state.typingByConversation[action.event.conversationId] ?? [];
       const withoutUser = currentEvents.filter((event) => event.user.id !== action.event.user.id);
@@ -242,14 +294,27 @@ export function ChatEmiProvider({
   config,
   autoConnect = true,
   initialConversations,
-  initialActiveConversationId
+  initialActiveConversationId,
+  initialNotifications
 }: ChatEmiProviderProps): ReactElement {
   const api = useMemo(() => new ChatEmiApi(config), [config]);
   const socket = useMemo(() => new ChatEmiSocket(config), [config]);
+  const runtimeStateRef = useRef({
+    activeConversationId: initialActiveConversationId,
+    currentUserId: config.currentUser?.id
+  });
+  const browserNotifiedIds = useRef(new Set<ChatEmiID>());
   const [state, dispatch] = useReducer(
     reducer,
-    createInitialState(config, initialConversations, initialActiveConversationId)
+    createInitialState(config, initialConversations, initialActiveConversationId, initialNotifications)
   );
+
+  useEffect(() => {
+    runtimeStateRef.current = {
+      activeConversationId: state.activeConversationId,
+      currentUserId: state.currentUser?.id
+    };
+  }, [state.activeConversationId, state.currentUser?.id]);
 
   useEffect(() => {
     let active = true;
@@ -305,7 +370,17 @@ export function ChatEmiProvider({
       socket.on("conversation.member.added", ({ conversationId, member }) => dispatch({ type: "upsert-member", conversationId, member })),
       socket.on("conversation.member.updated", ({ conversationId, member }) => dispatch({ type: "upsert-member", conversationId, member })),
       socket.on("conversation.member.removed", ({ conversationId, userId }) => dispatch({ type: "remove-member", conversationId, userId })),
-      socket.on("message.created", (message) => dispatch({ type: "upsert-message", message })),
+      socket.on("message.created", (message) => {
+        dispatch({ type: "upsert-message", message });
+
+        if (message.sender.id !== runtimeStateRef.current.currentUserId) {
+          dispatch({
+            type: "add-notification",
+            notification: messageToNotification(message),
+            maxStored: config.notifications?.maxStored
+          });
+        }
+      }),
       socket.on("message.updated", (message) => dispatch({ type: "upsert-message", message })),
       socket.on("message.deleted", ({ conversationId, messageId }) => dispatch({ type: "remove-message", conversationId, messageId })),
       socket.on("message.receipt", (receipt) => dispatch({ type: "apply-receipt", receipt })),
@@ -313,7 +388,14 @@ export function ChatEmiProvider({
         dispatch({ type: "set-message-reactions", conversationId, messageId, reactions })
       ),
       socket.on("typing", (event) => dispatch({ type: "set-typing", event })),
-      socket.on("presence", ({ userId, status, lastSeenAt }) => dispatch({ type: "set-presence", userId, status, lastSeenAt }))
+      socket.on("presence", ({ userId, status, lastSeenAt }) => dispatch({ type: "set-presence", userId, status, lastSeenAt })),
+      socket.on("notification", (notification) =>
+        dispatch({
+          type: "add-notification",
+          notification,
+          maxStored: config.notifications?.maxStored
+        })
+      )
     ];
 
     if (autoConnect && config.socketUrl) {
@@ -325,7 +407,25 @@ export function ChatEmiProvider({
       cleanups.forEach((cleanup) => cleanup());
       socket.disconnect();
     };
-  }, [autoConnect, config.socketUrl, socket]);
+  }, [autoConnect, config.notifications?.maxStored, config.socketUrl, socket]);
+
+  useEffect(() => {
+    if (!config.notifications?.enabled || !config.notifications.browser || typeof window === "undefined") return;
+    if (!("Notification" in window) || window.Notification.permission !== "granted") return;
+
+    const shouldShow = config.notifications.showWhenOpen || typeof document === "undefined" || document.hidden;
+    if (!shouldShow) return;
+
+    state.notifications.forEach((notification) => {
+      if (notification.read || browserNotifiedIds.current.has(notification.id)) return;
+
+      browserNotifiedIds.current.add(notification.id);
+      new window.Notification(notification.title || config.notifications?.title || "New message", {
+        body: notification.body,
+        icon: notification.avatarUrl
+      });
+    });
+  }, [config.notifications, state.notifications]);
 
   const refreshConversations = useCallback(
     async (options: ChatEmiListOptions = {}) => {
@@ -536,6 +636,30 @@ export function ChatEmiProvider({
 
   const setPresence = useCallback((status: ChatEmiPresenceStatus) => socket.sendPresence(status), [socket]);
 
+  const dismissNotification = useCallback((notificationId: ChatEmiID) => {
+    dispatch({ type: "dismiss-notification", notificationId });
+  }, []);
+
+  const markNotificationsRead = useCallback((notificationIds?: ChatEmiID[]) => {
+    dispatch({ type: "mark-notifications-read", notificationIds });
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    dispatch({ type: "clear-notifications" });
+  }, []);
+
+  const requestNotificationPermission = useCallback(async (): Promise<NotificationPermission | "unsupported"> => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      return "unsupported";
+    }
+
+    if (window.Notification.permission === "granted" || window.Notification.permission === "denied") {
+      return window.Notification.permission;
+    }
+
+    return window.Notification.requestPermission();
+  }, []);
+
   const connect = useCallback(() => socket.connect(), [socket]);
 
   const disconnect = useCallback(() => socket.disconnect(), [socket]);
@@ -563,6 +687,10 @@ export function ChatEmiProvider({
       startTyping,
       stopTyping,
       setPresence,
+      dismissNotification,
+      markNotificationsRead,
+      clearNotifications,
+      requestNotificationPermission,
       connect,
       disconnect
     }),
@@ -588,6 +716,10 @@ export function ChatEmiProvider({
       startTyping,
       stopTyping,
       setPresence,
+      dismissNotification,
+      markNotificationsRead,
+      clearNotifications,
+      requestNotificationPermission,
       connect,
       disconnect
     ]
@@ -686,6 +818,22 @@ function touchConversationWithMessage(conversations: ChatEmiConversation[], mess
         : conversation
     )
   );
+}
+
+function messageToNotification(message: ChatEmiMessage): ChatEmiNotification {
+  return {
+    id: `message:${message.id}`,
+    kind: "message",
+    title: message.sender.name,
+    body: message.text ?? message.attachments?.[0]?.name ?? "Sent a message",
+    conversationId: message.conversationId,
+    messageId: message.id,
+    actor: message.sender,
+    avatarUrl: message.sender.avatarUrl,
+    read: false,
+    createdAt: message.createdAt,
+    metadata: message.metadata
+  };
 }
 
 function getErrorMessage(error: unknown): string {

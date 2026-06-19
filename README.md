@@ -6,6 +6,7 @@ ChatEmi is a publish-ready React messaging package for building in-app messenger
 - A typed WebSocket client with reconnects, outbound queuing, typing, presence, receipts, and realtime conversation/message events.
 - Group, channel, direct, and bot conversation models with owner/admin/member roles.
 - Delivered/read receipts, last-seen presence, replies, forwards, avatars, voice messages, images, videos, and files.
+- A modern floating launcher with notification badge, draggable/resizable modal, and compact notification tray.
 - Optional external user-directory API integration.
 - Optional server-side MongoDB connection helpers for API backends.
 - `ChatEmiProvider` for application layout/state.
@@ -19,7 +20,7 @@ npm install chatemi
 ```
 
 ```tsx
-import { ChatEmiMessenger, ChatEmiProvider, useChatEmi } from "chatemi";
+import { ChatEmiLauncher, ChatEmiMessenger, ChatEmiProvider, useChatEmi } from "chatemi";
 import "chatemi/styles.css";
 
 export function App() {
@@ -29,7 +30,12 @@ export function App() {
         apiBaseUrl: "https://api.example.com/chat",
         socketUrl: "wss://api.example.com/chat/socket",
         token: () => localStorage.getItem("access_token") ?? undefined,
-        theme: "system",
+        theme: "violet",
+        notifications: {
+          enabled: true,
+          browser: true,
+          maxStored: 50
+        },
         userDirectory: {
           baseUrl: "https://identity.example.com",
           searchPath: "/users/search",
@@ -39,11 +45,68 @@ export function App() {
         }
       }}
     >
-      <ChatEmiMessenger theme="system" />
+      <ChatEmiLauncher theme="violet" />
     </ChatEmiProvider>
   );
 }
 ```
+
+## Next.js app usage
+
+Import package CSS once from `app/layout.tsx`:
+
+```tsx
+import "chatemi/styles.css";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My app"
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+Create a client component for the widget:
+
+```tsx
+"use client";
+
+import { ChatEmiLauncher, ChatEmiProvider } from "chatemi";
+
+export function ChatWidget() {
+  return (
+    <ChatEmiProvider
+      config={{
+        apiBaseUrl: process.env.NEXT_PUBLIC_CHAT_API_URL!,
+        socketUrl: process.env.NEXT_PUBLIC_CHAT_SOCKET_URL,
+        token: () => localStorage.getItem("access_token") ?? undefined,
+        theme: "glass",
+        notifications: {
+          enabled: true,
+          browser: true,
+          showWhenOpen: false
+        }
+      }}
+    >
+      <ChatEmiLauncher
+        defaultOpen={false}
+        placement="bottom-right"
+        theme="glass"
+        title="Support"
+        subtitle="Usually replies fast"
+      />
+    </ChatEmiProvider>
+  );
+}
+```
+
+Then render `<ChatWidget />` from any client component or include it in a page layout. The provider keeps the socket connected while the launcher modal is closed, so incoming `notification` and `message.created` events continue updating the badge in the background.
 
 ## Hook usage
 
@@ -131,6 +194,68 @@ Built-in outgoing helper events include:
 - `conversation.member.update`
 - `conversation.avatar.update`
 - `presence`
+
+## Launcher, themes, and notifications
+
+Use `ChatEmiLauncher` when you want a floating in-app messenger:
+
+```tsx
+<ChatEmiLauncher
+  placement="bottom-right"
+  theme="midnight"
+  title="Messages"
+  subtitle="Team chat"
+  initialSize={{ width: 460, height: 720 }}
+  minSize={{ width: 360, height: 520 }}
+  maxSize={{ width: 960, height: 860 }}
+/>
+```
+
+The launcher includes:
+
+- toggle button with unread notification badge
+- draggable modal header on desktop
+- native CSS resize handle on desktop
+- compact notification tray above the chat
+- mobile-friendly full-width modal behavior
+
+Notification events should use this envelope:
+
+```json
+{
+  "type": "notification",
+  "payload": {
+    "id": "notif_1",
+    "kind": "message",
+    "title": "Ava",
+    "body": "Sent a new message",
+    "conversationId": "chat_1",
+    "messageId": "message_1",
+    "createdAt": "2026-06-19T15:43:00.000Z"
+  }
+}
+```
+
+If the backend only emits `message.created`, ChatEmi creates a local message notification automatically for messages sent by other users.
+
+Browser notifications are optional and request permission from a user gesture when the launcher opens:
+
+```tsx
+<ChatEmiProvider
+  config={{
+    apiBaseUrl: "https://api.example.com/chat",
+    socketUrl: "wss://api.example.com/chat/socket",
+    notifications: {
+      enabled: true,
+      browser: true,
+      showWhenOpen: false,
+      maxStored: 100
+    }
+  }}
+>
+  <ChatEmiLauncher />
+</ChatEmiProvider>
+```
 
 ## Groups, channels, admins, and members
 
@@ -283,10 +408,10 @@ Connection guidance:
 
 ## Light mode and dark mode
 
-Use `theme="light"`, `theme="dark"`, or `theme="system"`:
+Use `theme="light"`, `theme="dark"`, `theme="system"`, `theme="midnight"`, `theme="glass"`, `theme="emerald"`, or `theme="violet"`:
 
 ```tsx
-<ChatEmiMessenger theme="dark" />
+<ChatEmiLauncher theme="glass" />
 ```
 
 ## Customizing the UI

@@ -26,7 +26,11 @@ export type ChatEmiMemberPermission =
   | "manage_conversation"
   | "invite_members";
 
-export type ChatEmiTheme = "light" | "dark" | "system";
+export type ChatEmiTheme = "light" | "dark" | "system" | "midnight" | "glass" | "emerald" | "violet";
+
+export type ChatEmiLauncherPlacement = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+
+export type ChatEmiNotificationKind = "message" | "mention" | "reaction" | "system" | "custom";
 
 export interface ChatEmiUser {
   id: ChatEmiID;
@@ -231,6 +235,20 @@ export interface ChatEmiPresenceEvent {
   lastSeenAt?: string;
 }
 
+export interface ChatEmiNotification {
+  id: ChatEmiID;
+  kind: ChatEmiNotificationKind;
+  title: string;
+  body?: string;
+  conversationId?: ChatEmiID;
+  messageId?: ChatEmiID;
+  actor?: ChatEmiUser;
+  avatarUrl?: string;
+  read?: boolean;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface ChatEmiSocketEnvelope<TType extends string = string, TPayload = unknown> {
   type: TType;
   payload: TPayload;
@@ -255,7 +273,7 @@ export interface ChatEmiSocketEventMap {
   "message.reaction": { conversationId: ChatEmiID; messageId: ChatEmiID; reactions: ChatEmiReaction[] };
   typing: ChatEmiTypingEvent;
   presence: ChatEmiPresenceEvent;
-  notification: Record<string, unknown>;
+  notification: ChatEmiNotification;
 }
 
 export type ChatEmiSocketEventName = keyof ChatEmiSocketEventMap;
@@ -289,6 +307,14 @@ export interface ChatEmiUserDirectoryConfig {
   mapUser?: (rawUser: unknown) => ChatEmiUser;
 }
 
+export interface ChatEmiNotificationConfig {
+  enabled?: boolean;
+  browser?: boolean;
+  showWhenOpen?: boolean;
+  maxStored?: number;
+  title?: string;
+}
+
 export interface ChatEmiConfig {
   apiBaseUrl: string;
   socketUrl?: string;
@@ -300,6 +326,7 @@ export interface ChatEmiConfig {
   endpoints?: ChatEmiEndpointOverrides;
   userDirectory?: ChatEmiUserDirectoryConfig;
   theme?: ChatEmiTheme;
+  notifications?: ChatEmiNotificationConfig;
   reconnect?: {
     enabled?: boolean;
     maxAttempts?: number;
@@ -314,6 +341,7 @@ export interface ChatEmiProviderProps {
   autoConnect?: boolean;
   initialConversations?: ChatEmiConversation[];
   initialActiveConversationId?: ChatEmiID;
+  initialNotifications?: ChatEmiNotification[];
 }
 
 export interface ChatEmiState {
@@ -323,6 +351,8 @@ export interface ChatEmiState {
   messagesByConversation: Record<ChatEmiID, ChatEmiMessage[]>;
   typingByConversation: Record<ChatEmiID, ChatEmiTypingEvent[]>;
   presenceByUser: Record<ChatEmiID, ChatEmiPresenceEvent>;
+  notifications: ChatEmiNotification[];
+  unreadNotificationCount: number;
   connectionStatus: ChatEmiConnectionStatus;
   theme: ChatEmiTheme;
   loading: boolean;
@@ -340,4 +370,28 @@ export interface ChatEmiMessengerProps {
   enableMediaPreview?: boolean;
   renderConversation?: (conversation: ChatEmiConversation, isActive: boolean) => ReactNode;
   renderMessage?: (message: ChatEmiMessage, isMine: boolean) => ReactNode;
+}
+
+export interface ChatEmiLauncherProps extends Omit<ChatEmiMessengerProps, "className"> {
+  className?: string;
+  title?: string;
+  subtitle?: string;
+  placement?: ChatEmiLauncherPlacement;
+  defaultOpen?: boolean;
+  showNotificationList?: boolean;
+  badgeCount?: number;
+  initialSize?: {
+    width: number;
+    height: number;
+  };
+  minSize?: {
+    width: number;
+    height: number;
+  };
+  maxSize?: {
+    width: number;
+    height: number;
+  };
+  markNotificationsReadOnOpen?: boolean;
+  launcherIcon?: ReactNode;
 }

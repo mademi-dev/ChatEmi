@@ -4,6 +4,7 @@ export { ChatEmiApi, ChatEmiApiError } from "./api";
 export { ChatEmiProvider, useChatEmi } from "./context";
 export type { ChatEmiActions, ChatEmiContextValue } from "./context";
 export { ChatEmiSocket } from "./socket";
+export { ChatEmiLauncher } from "./components/ChatEmiLauncher";
 export { ChatEmiMessenger } from "./components/ChatEmiMessenger";
 export type {
   ChatEmiAttachment,
@@ -17,6 +18,8 @@ export type {
   ChatEmiEndpointOverrides,
   ChatEmiForwardMessageInput,
   ChatEmiID,
+  ChatEmiLauncherPlacement,
+  ChatEmiLauncherProps,
   ChatEmiListOptions,
   ChatEmiManageMemberInput,
   ChatEmiMember,
@@ -27,6 +30,9 @@ export type {
   ChatEmiMessageListOptions,
   ChatEmiMessageStatus,
   ChatEmiMessengerProps,
+  ChatEmiNotification,
+  ChatEmiNotificationConfig,
+  ChatEmiNotificationKind,
   ChatEmiPage,
   ChatEmiPresenceEvent,
   ChatEmiPresenceStatus,
