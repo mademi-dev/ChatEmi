@@ -14,6 +14,7 @@ export default defineConfig({
     lib: {
       entry: "src/index.ts",
       name: "ChatEmi",
+      cssFileName: "styles",
       fileName: (format) => (format === "umd" ? "chatemi.umd.cjs" : "chatemi.js"),
       formats: ["es", "umd"]
     },
