@@ -53,19 +53,16 @@ export function ChatEmiLauncher({
   const resolvedBadgeCount = badgeCount ?? (unreadNotificationCount > 0 ? unreadNotificationCount : conversationUnreadCount);
 
   function toggleOpen(): void {
-    setOpen((currentOpen) => {
-      const nextOpen = !currentOpen;
+    const nextOpen = !open;
+    setOpen(nextOpen);
 
-      if (nextOpen && markNotificationsReadOnOpen) {
+    if (nextOpen) {
+      if (markNotificationsReadOnOpen) {
         actions.markNotificationsRead();
       }
 
-      if (nextOpen) {
-        void actions.requestNotificationPermission();
-      }
-
-      return nextOpen;
-    });
+      void actions.requestNotificationPermission();
+    }
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>): void {

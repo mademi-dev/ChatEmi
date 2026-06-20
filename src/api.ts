@@ -73,7 +73,7 @@ export class ChatEmiApi {
 
   constructor(config: ChatEmiConfig) {
     this.config = config;
-    this.fetcher = config.fetchImpl ?? fetch;
+    this.fetcher = config.fetchImpl ?? ((input, init) => fetch(input, init));
   }
 
   async getMe(signal?: AbortSignal): Promise<ChatEmiUser> {
