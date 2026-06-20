@@ -1,6 +1,6 @@
 {
-  "name": "chatemi",
-  "version": "0.1.0",
+  "name": "@mademi_dev/chatemi",
+  "version": "1.0.1",
   "description": "A React messaging kit with API clients, realtime socket support, hooks, provider state, and default Telegram-style UI.",
   "type": "module",
   "main": "dist/chatemi.umd.cjs",

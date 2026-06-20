@@ -1,4 +1,4 @@
-import { createChatEmiMongoConnection } from "chatemi/server";
+import { createChatEmiMongoConnection } from "@mademi_dev/chatemi/server";
 
 let connectionPromise: ReturnType<typeof createChatEmiMongoConnection> | undefined;
 

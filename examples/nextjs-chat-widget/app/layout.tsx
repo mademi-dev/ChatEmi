@@ -1,4 +1,4 @@
-import "chatemi/styles.css";
+import "@mademi_dev/chatemi/styles.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ChatWidget } from "./components/ChatWidget";

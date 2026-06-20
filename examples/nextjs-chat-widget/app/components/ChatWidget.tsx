@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatEmiLauncher, ChatEmiProvider } from "chatemi";
+import { ChatEmiLauncher, ChatEmiProvider } from "@mademi_dev/chatemi";
 import { useMemo } from "react";
 import { createChatEmiConfig } from "../lib/chatemi-config";
 

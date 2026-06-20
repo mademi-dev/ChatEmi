@@ -13,11 +13,33 @@ ChatEmi is a publish-ready React messaging package for building in-app messenger
 - `useChatEmi` for product code that needs chat actions and state.
 - `ChatEmiMessenger`, a default responsive light/dark Telegram-style UI that can be used immediately or customized.
 
+Repository: [github.com/mademi-dev/ChatEmi](https://github.com/mademi-dev/ChatEmi)
+
+## Requirements
+
+- React `>=18`
+- React DOM `>=18`
+- MongoDB driver `>=7` (optional, server-side only)
+
 ## Install
 
 ```bash
-npm install chatemi
+npm install @mademi_dev/chatemi react react-dom
 ```
+
+For MongoDB server helpers in your API backend:
+
+```bash
+npm install @mademi_dev/chatemi mongodb
+```
+
+## Package exports
+
+| Import | Purpose |
+| --- | --- |
+| `@mademi_dev/chatemi` | Provider, hook, API client, socket client, launcher, messenger UI, and types |
+| `@mademi_dev/chatemi/styles.css` | Default UI, themes, launcher modal, and notification badge styles |
+| `@mademi_dev/chatemi/server` | Node.js MongoDB connection helper and index setup |
 
 ## Documentation and examples
 
@@ -26,8 +48,8 @@ npm install chatemi
 - Next.js launcher example: [`examples/nextjs-chat-widget`](examples/nextjs-chat-widget)
 
 ```tsx
-import { ChatEmiLauncher, ChatEmiMessenger, ChatEmiProvider, useChatEmi } from "chatemi";
-import "chatemi/styles.css";
+import { ChatEmiLauncher, ChatEmiMessenger, ChatEmiProvider, useChatEmi } from "@mademi_dev/chatemi";
+import "@mademi_dev/chatemi/styles.css";
 
 export function App() {
   return (
@@ -62,7 +84,7 @@ export function App() {
 Import package CSS once from `app/layout.tsx`:
 
 ```tsx
-import "chatemi/styles.css";
+import "@mademi_dev/chatemi/styles.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -83,7 +105,7 @@ Create a client component for the widget:
 ```tsx
 "use client";
 
-import { ChatEmiLauncher, ChatEmiProvider } from "chatemi";
+import { ChatEmiLauncher, ChatEmiProvider } from "@mademi_dev/chatemi";
 
 export function ChatWidget() {
   return (
@@ -114,10 +136,50 @@ export function ChatWidget() {
 
 Then render `<ChatWidget />` from any client component or include it in a page layout. The provider keeps the socket connected while the launcher modal is closed, so incoming `notification` and `message.created` events continue updating the badge in the background.
 
+## Provider configuration
+
+`ChatEmiProvider` accepts:
+
+| Prop | Default | Purpose |
+| --- | --- | --- |
+| `config` | required | API, socket, auth, theme, and notification settings |
+| `autoConnect` | `true` | Connect the socket on mount when `socketUrl` is set |
+| `initialConversations` | `[]` | Seed conversation list before the first REST fetch |
+| `initialActiveConversationId` | first conversation | Pre-select a conversation |
+| `initialNotifications` | `[]` | Seed notification tray state |
+
+`config` fields:
+
+```ts
+type ChatEmiConfig = {
+  apiBaseUrl: string;
+  socketUrl?: string;
+  token?: string | (() => string | Promise<string | undefined> | undefined);
+  headers?: HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
+  currentUser?: ChatEmiUser;
+  fetchImpl?: typeof fetch;
+  websocketFactory?: (url: string) => WebSocket;
+  endpoints?: ChatEmiEndpointOverrides;
+  userDirectory?: ChatEmiUserDirectoryConfig;
+  theme?: ChatEmiTheme;
+  notifications?: ChatEmiNotificationConfig;
+  reconnect?: {
+    enabled?: boolean;
+    maxAttempts?: number;
+    initialDelayMs?: number;
+    maxDelayMs?: number;
+  };
+};
+```
+
+The socket appends `?token=<token>` to `socketUrl` when a token is configured. Override any REST path with `config.endpoints`.
+
 ## Hook usage
 
+`useChatEmi()` returns provider state, low-level clients, and actions:
+
 ```tsx
-import { useChatEmi } from "chatemi";
+import { useChatEmi } from "@mademi_dev/chatemi";
 
 export function SendWelcomeButton({ conversationId }: { conversationId: string }) {
   const { actions, activeMessages, connectionStatus } = useChatEmi();
@@ -137,6 +199,51 @@ export function SendWelcomeButton({ conversationId }: { conversationId: string }
   );
 }
 ```
+
+State highlights:
+
+- `currentUser`, `conversations`, `activeConversation`, `activeMessages`
+- `notifications`, `unreadNotificationCount`
+- `typingByConversation`, `presenceByUser`
+- `connectionStatus`, `loading`, `error`, `theme`
+- `api`, `socket`
+
+Action highlights:
+
+- Conversations: `refreshConversations`, `openConversation`, `createConversation`
+- Messages: `sendMessage`, `editMessage`, `deleteMessage`, `forwardMessage`, `searchMessages`
+- Receipts: `markRead`, `markDelivered`
+- Reactions and media: `addReaction`, `removeReaction`, `uploadAttachment`, `updateAvatar`
+- Members: `addMembers`, `updateMember`, `removeMember`
+- Presence: `startTyping`, `stopTyping`, `setPresence`
+- Notifications: `dismissNotification`, `markNotificationsRead`, `clearNotifications`, `requestNotificationPermission`
+- Connection: `connect`, `disconnect`
+
+## Low-level clients
+
+You can use the typed clients outside React when needed:
+
+```ts
+import { ChatEmiApi, ChatEmiSocket } from "@mademi_dev/chatemi";
+
+const api = new ChatEmiApi({
+  apiBaseUrl: "https://api.example.com/chat",
+  token: () => getAccessToken()
+});
+
+const socket = new ChatEmiSocket({
+  apiBaseUrl: "https://api.example.com/chat",
+  socketUrl: "wss://api.example.com/chat/socket",
+  token: () => getAccessToken()
+});
+
+await socket.connect();
+socket.on("message.created", (message) => {
+  console.log(message);
+});
+```
+
+`ChatEmiApiError` is exported for typed REST error handling.
 
 ## Expected REST API contract
 
@@ -159,7 +266,7 @@ By default ChatEmi calls these paths under `apiBaseUrl`:
 | Attachment upload | `POST /attachments` multipart form data |
 | Search | `GET /search/messages?q=...` |
 
-If your backend uses different paths, pass `config.endpoints` to override any route.
+If your backend uses different paths, pass `config.endpoints` to override any route. See [`docs/BACKEND_CONTRACT.md`](docs/BACKEND_CONTRACT.md) for request/response shapes.
 
 ## Socket event contract
 
@@ -211,11 +318,26 @@ Use `ChatEmiLauncher` when you want a floating in-app messenger:
   theme="midnight"
   title="Messages"
   subtitle="Team chat"
+  defaultOpen={false}
+  showNotificationList
+  markNotificationsReadOnOpen
   initialSize={{ width: 460, height: 720 }}
   minSize={{ width: 360, height: 520 }}
   maxSize={{ width: 960, height: 860 }}
 />
 ```
+
+Launcher props:
+
+| Prop | Default | Purpose |
+| --- | --- | --- |
+| `placement` | `bottom-right` | `bottom-right`, `bottom-left`, `top-right`, or `top-left` |
+| `defaultOpen` | `false` | Whether the modal starts open |
+| `showNotificationList` | `true` | Show the compact tray above the chat |
+| `markNotificationsReadOnOpen` | `true` | Mark notifications read when opening |
+| `badgeCount` | unread notifications or conversation unread total | Override launcher badge count |
+| `launcherIcon` | built-in icon | Custom toggle button content |
+| `initialSize` / `minSize` / `maxSize` | `420x680` / `340x480` / `920x860` | Desktop modal sizing |
 
 The launcher includes:
 
@@ -379,11 +501,11 @@ Use `config.userDirectory` when users live outside your chat backend. ChatEmi wi
 MongoDB must be connected from your API server, not from browser React code. Install the optional peer dependency in your backend:
 
 ```bash
-npm install chatemi mongodb
+npm install @mademi_dev/chatemi mongodb
 ```
 
 ```ts
-import { createChatEmiMongoConnection } from "chatemi/server";
+import { createChatEmiMongoConnection, ensureChatEmiIndexes } from "@mademi_dev/chatemi/server";
 
 const chatDb = await createChatEmiMongoConnection({
   uri: process.env.MONGODB_URI!,
@@ -405,6 +527,16 @@ export const receipts = chatDb.collections.receipts;
 export const attachments = chatDb.collections.attachments;
 ```
 
+Default collection names:
+
+- `chatemi_conversations`
+- `chatemi_messages`
+- `chatemi_members`
+- `chatemi_receipts`
+- `chatemi_attachments`
+
+Override them with `collectionNames` when creating the connection. The helper reuses one MongoDB client per process and URI/options pair.
+
 Connection guidance:
 
 - Create one MongoDB client per server process and reuse it.
@@ -421,6 +553,18 @@ Use `theme="light"`, `theme="dark"`, `theme="system"`, `theme="midnight"`, `them
 ```
 
 ## Customizing the UI
+
+`ChatEmiMessenger` props:
+
+| Prop | Default | Purpose |
+| --- | --- | --- |
+| `showSidebar` | `true` | Conversation list sidebar |
+| `enableAdminControls` | `true` | Member management panel for admins |
+| `enableMessageActions` | `true` | Reply, react, and forward actions |
+| `enableMediaPreview` | `true` | Inline image/video/audio previews |
+| `composerPlaceholder` | `Write a message...` | Composer input placeholder |
+| `renderConversation` | built-in row | Custom conversation list item |
+| `renderMessage` | built-in bubble | Custom message renderer |
 
 ```tsx
 <ChatEmiMessenger
@@ -442,10 +586,12 @@ npm run typecheck
 npm run build
 ```
 
+`prepublishOnly` runs `npm run build` automatically before publish.
+
 ## Publishing
 
-Update the version in `package.json`, then run:
+This package is published under the `@mademi_dev` scope. Update the version in `package.json`, then run:
 
 ```bash
-npm publish
+npm publish --access public
 ```

@@ -1,4 +1,4 @@
-import type { ChatEmiConfig } from "chatemi";
+import type { ChatEmiConfig } from "@mademi_dev/chatemi";
 
 export function createChatEmiConfig(): ChatEmiConfig {
   return {

@@ -8,9 +8,9 @@ ChatEmi is split into browser-safe and server-side pieces:
 
 | Area | Import | Runs in | Purpose |
 | --- | --- | --- | --- |
-| React package | `chatemi` | Browser / React client | Provider, hook, API client, socket client, launcher, messenger UI |
-| Styles | `chatemi/styles.css` | Browser | All default UI, themes, launcher modal, notification badge |
-| Server helpers | `chatemi/server` | Node.js only | MongoDB connection helper and collection/index setup |
+| React package | `@mademi_dev/chatemi` | Browser / React client | Provider, hook, API client, socket client, launcher, messenger UI |
+| Styles | `@mademi_dev/chatemi/styles.css` | Browser | All default UI, themes, launcher modal, notification badge |
+| Server helpers | `@mademi_dev/chatemi/server` | Node.js only | MongoDB connection helper and collection/index setup |
 
 Do not expose database credentials to browser code. Browser code should call your authenticated HTTP and WebSocket APIs.
 
@@ -19,7 +19,7 @@ Do not expose database credentials to browser code. Browser code should call you
 ### Install
 
 ```bash
-npm install chatemi
+npm install @mademi_dev/chatemi
 ```
 
 If your API server uses ChatEmi MongoDB helpers:
@@ -33,7 +33,7 @@ npm install mongodb
 In App Router, import CSS from `app/layout.tsx`:
 
 ```tsx
-import "chatemi/styles.css";
+import "@mademi_dev/chatemi/styles.css";
 ```
 
 ### Create a client widget
@@ -43,7 +43,7 @@ The widget uses browser APIs (`localStorage`, WebSocket, notifications), so it m
 ```tsx
 "use client";
 
-import { ChatEmiLauncher, ChatEmiProvider } from "chatemi";
+import { ChatEmiLauncher, ChatEmiProvider } from "@mademi_dev/chatemi";
 import { useMemo } from "react";
 
 export function ChatWidget() {
@@ -210,10 +210,10 @@ See `docs/BACKEND_CONTRACT.md` for full details.
 
 ## 7. MongoDB integration
 
-Use `chatemi/server` only from Node.js:
+Use `@mademi_dev/chatemi/server` only from Node.js:
 
 ```ts
-import { createChatEmiMongoConnection } from "chatemi/server";
+import { createChatEmiMongoConnection } from "@mademi_dev/chatemi/server";
 
 const chatDb = await createChatEmiMongoConnection({
   uri: process.env.MONGODB_URI!,
