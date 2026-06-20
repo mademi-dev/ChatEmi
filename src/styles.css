@@ -1,0 +1,940 @@
+.chatemi {
+  --chatemi-bg: #f7f8fc;
+  --chatemi-panel: rgba(255, 255, 255, 0.92);
+  --chatemi-border: rgba(148, 163, 184, 0.28);
+  --chatemi-text: #0f172a;
+  --chatemi-muted: #64748b;
+  --chatemi-primary: #2563eb;
+  --chatemi-primary-dark: #1d4ed8;
+  --chatemi-bubble: #eef2ff;
+  --chatemi-bubble-mine: linear-gradient(135deg, #2563eb, #7c3aed);
+  --chatemi-danger: #d33f49;
+  --chatemi-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
+  background: var(--chatemi-bg);
+  border: 1px solid var(--chatemi-border);
+  border-radius: 28px;
+  box-shadow: var(--chatemi-shadow);
+  color: var(--chatemi-text);
+  display: grid;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  height: min(760px, 100vh);
+  min-height: 520px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.chatemi-launcher {
+  --chatemi-bg: #f7f8fc;
+  --chatemi-panel: rgba(255, 255, 255, 0.92);
+  --chatemi-border: rgba(148, 163, 184, 0.28);
+  --chatemi-text: #0f172a;
+  --chatemi-muted: #64748b;
+  --chatemi-primary: #2563eb;
+  --chatemi-primary-dark: #1d4ed8;
+  --chatemi-bubble: #eef2ff;
+  --chatemi-bubble-mine: linear-gradient(135deg, #2563eb, #7c3aed);
+  --chatemi-danger: #d33f49;
+  --chatemi-shadow: 0 24px 80px rgba(15, 23, 42, 0.18);
+}
+
+.chatemi[data-theme="dark"],
+.chatemi-launcher[data-theme="dark"] {
+  --chatemi-bg: #101722;
+  --chatemi-panel: #172231;
+  --chatemi-border: #2a3a4e;
+  --chatemi-text: #eef5ff;
+  --chatemi-muted: #94a7bd;
+  --chatemi-primary: #2f9bff;
+  --chatemi-primary-dark: #1877d6;
+  --chatemi-bubble: #223044;
+  --chatemi-bubble-mine: linear-gradient(135deg, #1e88e5, #7c4dff);
+  --chatemi-danger: #ff7380;
+  --chatemi-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
+}
+
+.chatemi[data-theme="midnight"],
+.chatemi-launcher[data-theme="midnight"] {
+  --chatemi-bg: #070b18;
+  --chatemi-panel: rgba(13, 18, 32, 0.96);
+  --chatemi-border: rgba(99, 102, 241, 0.22);
+  --chatemi-text: #edf2ff;
+  --chatemi-muted: #9aa8c7;
+  --chatemi-primary: #8b5cf6;
+  --chatemi-primary-dark: #6d28d9;
+  --chatemi-bubble: #151f35;
+  --chatemi-bubble-mine: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  --chatemi-danger: #fb7185;
+  --chatemi-shadow: 0 30px 90px rgba(5, 7, 18, 0.66);
+}
+
+.chatemi[data-theme="glass"],
+.chatemi-launcher[data-theme="glass"] {
+  --chatemi-bg: linear-gradient(135deg, rgba(239, 246, 255, 0.82), rgba(250, 245, 255, 0.82));
+  --chatemi-panel: rgba(255, 255, 255, 0.72);
+  --chatemi-border: rgba(255, 255, 255, 0.42);
+  --chatemi-text: #111827;
+  --chatemi-muted: #64748b;
+  --chatemi-primary: #7c3aed;
+  --chatemi-primary-dark: #5b21b6;
+  --chatemi-bubble: rgba(255, 255, 255, 0.74);
+  --chatemi-bubble-mine: linear-gradient(135deg, #7c3aed, #2563eb);
+  --chatemi-danger: #e11d48;
+  --chatemi-shadow: 0 30px 90px rgba(79, 70, 229, 0.22);
+}
+
+.chatemi[data-theme="emerald"],
+.chatemi-launcher[data-theme="emerald"] {
+  --chatemi-bg: #f0fdfa;
+  --chatemi-panel: rgba(255, 255, 255, 0.94);
+  --chatemi-border: rgba(20, 184, 166, 0.22);
+  --chatemi-text: #042f2e;
+  --chatemi-muted: #4b8079;
+  --chatemi-primary: #0f766e;
+  --chatemi-primary-dark: #115e59;
+  --chatemi-bubble: #ccfbf1;
+  --chatemi-bubble-mine: linear-gradient(135deg, #0f766e, #10b981);
+  --chatemi-danger: #dc2626;
+}
+
+.chatemi[data-theme="violet"],
+.chatemi-launcher[data-theme="violet"] {
+  --chatemi-bg: #faf5ff;
+  --chatemi-panel: rgba(255, 255, 255, 0.94);
+  --chatemi-border: rgba(168, 85, 247, 0.24);
+  --chatemi-text: #2e1065;
+  --chatemi-muted: #7e6a9e;
+  --chatemi-primary: #9333ea;
+  --chatemi-primary-dark: #7e22ce;
+  --chatemi-bubble: #f3e8ff;
+  --chatemi-bubble-mine: linear-gradient(135deg, #9333ea, #ec4899);
+  --chatemi-danger: #be123c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chatemi[data-theme="system"],
+  .chatemi-launcher[data-theme="system"] {
+    --chatemi-bg: #101722;
+    --chatemi-panel: #172231;
+    --chatemi-border: #2a3a4e;
+    --chatemi-text: #eef5ff;
+    --chatemi-muted: #94a7bd;
+    --chatemi-primary: #2f9bff;
+    --chatemi-primary-dark: #1877d6;
+    --chatemi-bubble: #223044;
+    --chatemi-bubble-mine: linear-gradient(135deg, #1e88e5, #7c4dff);
+    --chatemi-danger: #ff7380;
+    --chatemi-shadow: 0 24px 80px rgba(0, 0, 0, 0.44);
+  }
+}
+
+.chatemi * {
+  box-sizing: border-box;
+}
+
+.chatemi button,
+.chatemi input,
+.chatemi textarea {
+  font: inherit;
+}
+
+.chatemi-launcher {
+  color: var(--chatemi-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  position: fixed;
+  z-index: 2147483000;
+}
+
+.chatemi-launcher--bottom-right {
+  bottom: 24px;
+  right: 24px;
+}
+
+.chatemi-launcher--bottom-left {
+  bottom: 24px;
+  left: 24px;
+}
+
+.chatemi-launcher--top-right {
+  right: 24px;
+  top: 24px;
+}
+
+.chatemi-launcher--top-left {
+  left: 24px;
+  top: 24px;
+}
+
+.chatemi-launcher__toggle {
+  align-items: center;
+  background: var(--chatemi-bubble-mine);
+  border: 0;
+  border-radius: 24px;
+  box-shadow: var(--chatemi-shadow);
+  color: white;
+  cursor: pointer;
+  display: inline-flex;
+  height: 64px;
+  justify-content: center;
+  position: relative;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 64px;
+}
+
+.chatemi-launcher__toggle:hover {
+  box-shadow: 0 22px 70px rgba(37, 99, 235, 0.36);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.chatemi-launcher__badge {
+  align-items: center;
+  background: #ef4444;
+  border: 3px solid white;
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
+  position: absolute;
+  right: -7px;
+  top: -7px;
+}
+
+.chatemi-launcher__modal {
+  background: var(--chatemi-panel);
+  border: 1px solid var(--chatemi-border);
+  border-radius: 28px;
+  box-shadow: var(--chatemi-shadow);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+  position: absolute;
+  resize: both;
+  touch-action: none;
+}
+
+.chatemi-launcher--bottom-right .chatemi-launcher__modal {
+  bottom: 82px;
+  right: 0;
+}
+
+.chatemi-launcher--bottom-left .chatemi-launcher__modal {
+  bottom: 82px;
+  left: 0;
+}
+
+.chatemi-launcher--top-right .chatemi-launcher__modal {
+  right: 0;
+  top: 82px;
+}
+
+.chatemi-launcher--top-left .chatemi-launcher__modal {
+  left: 0;
+  top: 82px;
+}
+
+.chatemi-launcher__modal-header {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent),
+    var(--chatemi-bubble-mine);
+  color: white;
+  cursor: grab;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px 16px;
+  user-select: none;
+}
+
+.chatemi-launcher__modal-header:active {
+  cursor: grabbing;
+}
+
+.chatemi-launcher__modal-header div {
+  display: grid;
+  gap: 2px;
+}
+
+.chatemi-launcher__modal-header span {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.78rem;
+}
+
+.chatemi-launcher__modal-header button,
+.chatemi-launcher__clear {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 8px 12px;
+}
+
+.chatemi-launcher__notifications {
+  background: color-mix(in srgb, var(--chatemi-panel) 86%, var(--chatemi-primary) 14%);
+  border-bottom: 1px solid var(--chatemi-border);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px;
+}
+
+.chatemi-launcher__notification {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--chatemi-border);
+  border-radius: 18px;
+  color: var(--chatemi-text);
+  cursor: pointer;
+  display: grid;
+  gap: 10px;
+  grid-column: 1;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 8px;
+  text-align: left;
+}
+
+.chatemi-launcher__notification--unread {
+  box-shadow: inset 3px 0 0 var(--chatemi-primary);
+}
+
+.chatemi-launcher__notification img,
+.chatemi-launcher__notification > span:first-child {
+  align-items: center;
+  background: var(--chatemi-bubble-mine);
+  border-radius: 14px;
+  color: white;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  height: 36px;
+  justify-content: center;
+  object-fit: cover;
+  width: 36px;
+}
+
+.chatemi-launcher__notification span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.chatemi-launcher__notification small {
+  color: var(--chatemi-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatemi-launcher__clear {
+  align-self: start;
+  background: transparent;
+  border-color: var(--chatemi-border);
+  color: var(--chatemi-muted);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.chatemi-launcher__modal .chatemi {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  height: 100%;
+  min-height: 0;
+}
+
+.chatemi__sidebar {
+  background: rgba(255, 255, 255, 0.82);
+  border-right: 1px solid var(--chatemi-border);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chatemi__brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.chatemi__brand div {
+  display: grid;
+  gap: 4px;
+}
+
+.chatemi__brand span,
+.chatemi__conversation small,
+.chatemi__header span,
+.chatemi__message footer {
+  color: var(--chatemi-muted);
+  font-size: 0.82rem;
+}
+
+.chatemi__status {
+  background: var(--chatemi-muted);
+  border-radius: 999px;
+  height: 10px;
+  width: 10px;
+}
+
+.chatemi__status--connected {
+  background: #24b47e;
+}
+
+.chatemi__status--connecting,
+.chatemi__status--reconnecting {
+  background: #f2a900;
+}
+
+.chatemi__status--error {
+  background: var(--chatemi-danger);
+}
+
+.chatemi__search {
+  padding: 0 16px 14px;
+}
+
+.chatemi__search input {
+  background: #eef4fb;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  outline: none;
+  padding: 12px 16px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+  width: 100%;
+}
+
+.chatemi__search input:focus {
+  background: #ffffff;
+  border-color: var(--chatemi-primary);
+}
+
+.chatemi__conversation-list {
+  display: grid;
+  gap: 4px;
+  overflow: auto;
+  padding: 0 10px 12px;
+}
+
+.chatemi__conversation {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 18px;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 12px;
+  text-align: left;
+}
+
+.chatemi__conversation:hover,
+.chatemi__conversation--active {
+  background: #eaf4ff;
+}
+
+.chatemi__conversation-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chatemi__conversation-body strong,
+.chatemi__conversation-body small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chatemi__badge {
+  background: var(--chatemi-primary);
+  border-radius: 999px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 24px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.chatemi__main {
+  background:
+    radial-gradient(circle at top right, rgba(22, 135, 255, 0.09), transparent 32%),
+    var(--chatemi-panel);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  min-width: 0;
+  position: relative;
+}
+
+.chatemi__header {
+  align-items: center;
+  border-bottom: 1px solid var(--chatemi-border);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 16px 20px;
+}
+
+.chatemi__header div {
+  display: grid;
+  gap: 4px;
+}
+
+.chatemi__header-action,
+.chatemi__members button,
+.chatemi__message-actions button,
+.chatemi__replying button {
+  background: #eef4fb;
+  border: 1px solid var(--chatemi-border);
+  border-radius: 999px;
+  color: var(--chatemi-text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 12px;
+}
+
+.chatemi__avatar {
+  align-items: center;
+  background: linear-gradient(135deg, var(--chatemi-primary), #7c4dff);
+  border-radius: 18px;
+  color: white;
+  display: inline-flex;
+  flex: 0 0 44px;
+  font-weight: 800;
+  height: 44px;
+  justify-content: center;
+  object-fit: cover;
+  width: 44px;
+}
+
+.chatemi__avatar--fallback {
+  letter-spacing: -0.04em;
+}
+
+.chatemi__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  padding: 24px;
+}
+
+.chatemi__members {
+  background: rgba(255, 255, 255, 0.76);
+  border-bottom: 1px solid var(--chatemi-border);
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.chatemi[data-theme="dark"] .chatemi__members {
+  background: rgba(16, 23, 34, 0.62);
+}
+
+.chatemi__members-list {
+  display: grid;
+  gap: 8px;
+  max-height: 190px;
+  overflow: auto;
+}
+
+.chatemi__member,
+.chatemi__user-results button {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.chatemi__member-avatar,
+.chatemi__user-results img {
+  align-items: center;
+  background: linear-gradient(135deg, var(--chatemi-primary), #7c4dff);
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+  object-fit: cover;
+  width: 32px;
+}
+
+.chatemi__member span {
+  display: grid;
+}
+
+.chatemi__member small,
+.chatemi__member-search span {
+  color: var(--chatemi-muted);
+  font-size: 0.78rem;
+}
+
+.chatemi__member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.chatemi__member-search {
+  display: grid;
+  gap: 6px;
+}
+
+.chatemi__member-search input {
+  background: #eef4fb;
+  border: 1px solid var(--chatemi-border);
+  border-radius: 14px;
+  color: var(--chatemi-text);
+  padding: 10px 12px;
+}
+
+.chatemi__user-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chatemi__message-shell {
+  display: contents;
+}
+
+.chatemi__message {
+  align-self: flex-start;
+  background: var(--chatemi-bubble);
+  border-radius: 18px 18px 18px 6px;
+  max-width: min(72%, 680px);
+  padding: 12px 14px 8px;
+}
+
+.chatemi__message--mine {
+  align-self: flex-end;
+  background: var(--chatemi-bubble-mine);
+  border-radius: 18px 18px 6px 18px;
+  color: white;
+}
+
+.chatemi__message p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.chatemi__forwarded,
+.chatemi__reply-preview {
+  border-left: 3px solid var(--chatemi-primary);
+  color: var(--chatemi-muted);
+  font-size: 0.82rem;
+  margin: 0 0 8px;
+  padding-left: 8px;
+}
+
+.chatemi__reply-preview {
+  display: grid;
+  gap: 2px;
+}
+
+.chatemi__message-sender {
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+}
+
+.chatemi__message footer {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.chatemi__message--mine footer {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chatemi__message-attachments,
+.chatemi__reactions,
+.chatemi__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chatemi__media,
+.chatemi__attachment-pill {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--chatemi-border);
+  border-radius: 12px;
+  color: inherit;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.chatemi__media--image,
+.chatemi__media--video,
+.chatemi__media--audio {
+  align-items: stretch;
+  display: grid;
+  max-width: 320px;
+  padding: 8px;
+}
+
+.chatemi__media--image img,
+.chatemi__media--video video {
+  border-radius: 12px;
+  max-height: 260px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.chatemi__media--audio audio {
+  max-width: 260px;
+  width: 100%;
+}
+
+.chatemi__media--file img {
+  border-radius: 8px;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.chatemi__media small {
+  color: var(--chatemi-muted);
+}
+
+.chatemi__reactions span {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  color: var(--chatemi-text);
+  font-size: 0.82rem;
+  padding: 4px 8px;
+}
+
+.chatemi__attachments {
+  border-top: 1px solid var(--chatemi-border);
+  margin: 0;
+  padding: 10px 16px 0;
+}
+
+.chatemi__replying {
+  align-items: center;
+  border-top: 1px solid var(--chatemi-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 16px 0;
+}
+
+.chatemi__replying span {
+  border-left: 3px solid var(--chatemi-primary);
+  color: var(--chatemi-muted);
+  padding-left: 10px;
+}
+
+.chatemi__attachment-pill {
+  cursor: pointer;
+}
+
+.chatemi__composer {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 16px;
+}
+
+.chatemi__composer textarea {
+  background: #eef4fb;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  max-height: 160px;
+  min-height: 46px;
+  outline: none;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.chatemi__composer textarea:focus {
+  background: white;
+  border-color: var(--chatemi-primary);
+}
+
+.chatemi__composer button,
+.chatemi__upload {
+  align-items: center;
+  border-radius: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 16px;
+}
+
+.chatemi__composer button {
+  background: var(--chatemi-primary);
+  border: 0;
+  color: white;
+}
+
+.chatemi__composer button:hover {
+  background: var(--chatemi-primary-dark);
+}
+
+.chatemi__composer button:disabled,
+.chatemi__upload:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.chatemi__message-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.chatemi__message:hover .chatemi__message-actions,
+.chatemi__message:focus-within .chatemi__message-actions {
+  opacity: 1;
+}
+
+.chatemi__upload {
+  background: #eef4fb;
+  border: 1px solid var(--chatemi-border);
+  color: var(--chatemi-text);
+  overflow: hidden;
+  position: relative;
+}
+
+.chatemi__upload input {
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.chatemi__empty {
+  color: var(--chatemi-muted);
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.chatemi__empty--screen {
+  align-self: center;
+  justify-self: center;
+}
+
+.chatemi__error {
+  background: #fff2f2;
+  border-top: 1px solid #ffd5d5;
+  bottom: 0;
+  color: var(--chatemi-danger);
+  font-size: 0.9rem;
+  left: 0;
+  padding: 10px 16px;
+  position: absolute;
+  right: 0;
+}
+
+.chatemi__sr-only {
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 760px) {
+  .chatemi-launcher {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    top: auto;
+  }
+
+  .chatemi-launcher__toggle {
+    margin-left: auto;
+  }
+
+  .chatemi-launcher__modal,
+  .chatemi-launcher--bottom-right .chatemi-launcher__modal,
+  .chatemi-launcher--bottom-left .chatemi-launcher__modal,
+  .chatemi-launcher--top-right .chatemi-launcher__modal,
+  .chatemi-launcher--top-left .chatemi-launcher__modal {
+    bottom: 84px;
+    height: min(78vh, 720px) !important;
+    left: 0;
+    max-height: 78vh !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    resize: none;
+    right: 0;
+    top: auto;
+    transform: none !important;
+    width: 100% !important;
+  }
+
+  .chatemi {
+    border-radius: 0;
+    grid-template-columns: 1fr;
+    height: 100vh;
+  }
+
+  .chatemi__sidebar {
+    display: none;
+  }
+
+  .chatemi__composer {
+    grid-template-columns: 1fr auto;
+  }
+
+  .chatemi__upload {
+    grid-column: 1 / -1;
+  }
+
+  .chatemi__message {
+    max-width: 88%;
+  }
+}
